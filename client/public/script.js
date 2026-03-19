@@ -2,20 +2,9 @@
 // Private Dialer - Brain Logic (العقل البرمجي)
 // ================================================
 
-// Firebase Config
-const firebaseConfig = {
-    apiKey: "GOOGLE_API_KEY",
-    authDomain: "call-now-24582.firebaseapp.com",
-    projectId: "call-now-24582",
-    databaseURL: "https://call-now-24582-default-rtdb.firebaseio.com/"
-};
-
-if (typeof firebase !== 'undefined') {
-    try { firebase.initializeApp(firebaseConfig); } catch(e) {}
-}
-
-const db = firebase ? firebase.database() : null;
-const auth = firebase ? firebase.auth() : null;
+// Firebase initialized in HTML - reuse from there
+const db = (typeof firebase !== 'undefined') ? firebase.database() : null;
+const auth = (typeof firebase !== 'undefined') ? firebase.auth() : null;
 
 let currentUser = null;
 let balance = 0;

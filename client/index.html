@@ -416,7 +416,7 @@
             <div style="width:100px; height:100px; background:#E1F5FE; border-radius:50%; margin:0 auto 20px; display:flex; align-items:center; justify-content:center; font-size:2.5rem; color:var(--primary-azure);"><i class="fas fa-user-shield"></i></div>
             <h2 style="margin-bottom:20px;">أبو الزهراء VIP</h2>
             <div class="info-card" style="text-align:right; background:#fff;">
-                <p style="margin-bottom:5px; color:#666;">الرقم الأمريكي المرتبط</p>
+                <p style="margin-bottom:5px; color:#666;">رقمي</p>
                 <h3 id="account-us-number-display" style="color:var(--green); font-size:1.3rem;">...</h3>
                 <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
                 <p style="margin-bottom:5px; color:#666;">البريد الإلكتروني</p>
@@ -569,11 +569,11 @@
         document.getElementById('dial-number').innerText = dialNumber;
     };
 
-    function openSubPage(id) { 
+    window.openSubPage = function(id) { 
         const page = document.getElementById(id);
         if (page) page.style.display = 'flex'; 
     }
-    function closeSubPage(id) { 
+    window.closeSubPage = function(id) { 
         const page = document.getElementById(id);
         if (page) page.style.display = 'none'; 
     }
