@@ -59,9 +59,10 @@ jobs:
       - name: Build Android Debug APK
         working-directory: android
         run: |
+          echo "Generating Gradle Wrapper..."
+          gradle wrapper  # هذا الأمر سيقوم بإنشاء ملف gradlew إذا كان مفقوداً
           echo "Starting Gradle build..."
           chmod +x gradlew
-          ./gradlew clean
           ./gradlew assembleDebug
           echo "✅ APK build completed"
 
