@@ -629,6 +629,11 @@ function openSubPage(pageId) {
     }
 }
 
+function closeSubPage(pageId) {
+  const el = document.getElementById(pageId);
+  if (el) el.style.display = 'none';
+}
+
 // =============== PAYMENT GATEWAY ===============
 
 async function processPayment(amount) {
