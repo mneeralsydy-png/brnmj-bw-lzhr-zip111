@@ -46,14 +46,14 @@ jobs:
           echo "✅ Capacitor sync completed"
 
       - name: List Android native project
-         :android
+        working-directory: android
         run: |
           echo "Android project structure:"
           ls -la
           echo ""
           echo "Gradle wrapper:"
           ls -la | grep gradle
-
+          
       - name: Build Android Debug APK
         working-directory: android
         run: |
