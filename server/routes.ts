@@ -7,6 +7,7 @@ import jwt from "jsonwebtoken";
 import twilio from "twilio";
 import path from "path";
 import { fileURLToPath } from "url";
+import { initializeFirebase, getFirestore, getUserBalance, updateUserBalance } from "./firebase";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -101,11 +102,53 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Initialize Firebase
+  try {
+    initializeFirebase();
+  } catch (firebaseErr: any) {
+    console.warn("Firebase initialization warning:", firebaseErr.message);
+  }
+
   // put application routes here
   // prefix all routes with /api
 
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+
+  // Test Firebase connection
+  app.post("/api/test-firebase", async (req: any, res: any) => {
+    try {
+      const { userId } = req.body;
+      if (!userId) {
+        return res.json({ ok: false, error: "userId مطلوب" });
+      }
+
+      const db = getFirestore();
+      
+      // Try to read from Firestore
+      const userDoc = await db.collection("users").doc(userId).get();
+      
+      if (userDoc.exists) {
+        res.json({ 
+          ok: true, 
+          message: "✅ Firebase متصل بنجاح",
+          userData: userDoc.data()
+        });
+      } else {
+        res.json({ 
+          ok: true, 
+          message: "✅ Firebase متصل بنجاح، المستخدم غير موجود حالياً",
+          userData: null
+        });
+      }
+    } catch (e: any) {
+      console.error("Firebase test error:", e);
+      res.json({ 
+        ok: false, 
+        error: "خطأ في الاتصال بـ Firebase: " + e.message 
+      });
+    }
+  });
 
   // Register
   app.post("/api/register", async (req: any, res: any) => {

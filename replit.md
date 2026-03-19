@@ -41,6 +41,7 @@ Private Dialer is a professional Arabic VoIP application called "أبو الزه
 | `/api/recordings` | GET | JWT | Fetch call recordings from Twilio |
 | `/api/topup` | POST | JWT | Add balance (after PayPal payment) |
 | `/api/firebase-auth` | POST | No | Google/Firebase authentication |
+| `/api/test-firebase` | POST | No | Test Firestore connection (userId in body) |
 | `/twiml` | POST | No | TwiML webhook for Twilio calls |
 | `/token` | GET | No | Legacy Twilio token (for index.html SDK) |
 | `/setup-new-user` | POST | No | Firebase new user setup hook |
@@ -50,10 +51,30 @@ Private Dialer is a professional Arabic VoIP application called "أبو الزه
 - **`calls`** - id, userId, toNumber, duration, cost, timestamp
 - **`sms`** - id, userId, toNumber, message, direction, cost, timestamp
 
+### Firestore Database (Firebase)
+- **`users/{userId}`** collection - balance, assignedNumber, assignedNumberSid, etc.
+- Used for balance verification before Twilio operations
+- Stores assigned phone numbers and their Twilio SIDs
+
 ### External Services
-- **Firebase** - Authentication (email/password + Google) + Realtime Database
-- **Twilio** - VoIP calls + SMS + recordings
+- **Firebase** - Authentication (email/password + Google) + Firestore (balance tracking) + Realtime Database
+- **Twilio** - VoIP calls + SMS + recordings + phone number management
 - **PayPal** - Payment processing for balance top-up
+
+## Firebase Backend Integration
+
+### Firebase Module (`server/firebase.ts`)
+Provides the following functions:
+- **`initializeFirebase()`** - Initializes Firebase Admin SDK using FIREBASE_SERVICE_ACCOUNT secret
+- **`getFirestore()`** - Returns Firestore database instance
+- **`getRealtimeDb()`** - Returns Firebase Realtime Database instance
+- **`getUserBalance(userId)`** - Async function to get user's balance from Firestore
+- **`updateUserBalance(userId, newBalance)`** - Async function to update user's balance
+- **`assignNumberToUser(userId, phoneNumber, sid)`** - Stores assigned Twilio number to user's Firestore doc
+- **`getUserAssignedNumber(userId)`** - Retrieves assigned Twilio number from Firestore
+
+### Test Firebase Connection
+POST `/api/test-firebase` with `{"userId": "test_user_id"}` to verify Firestore connectivity.
 
 ## Environment Variables Required
 
