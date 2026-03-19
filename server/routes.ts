@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import twilio from "twilio";
 import path from "path";
 import { fileURLToPath } from "url";
-import { initializeFirebase, getFirestore, getUserBalance, updateUserBalance } from "./firebase";
+import { initializeFirebase, getFirestore, getUserBalance, updateUserBalance, assignNumberToUser } from "./firebase";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -494,6 +494,125 @@ export async function registerRoutes(
       });
     } catch (e: any) {
       res.json({ ok: false, error: e.message });
+    }
+  });
+
+  // Assign Twilio number to user - automatically purchase a US phone number
+  app.post("/api/assign-number", authenticate, async (req: any, res: any) => {
+    try {
+      const userId = req.userId;
+      
+      // Get user's current balance from Firestore
+      const userBalance = await getUserBalance(String(userId));
+      
+      // Cost of a phone number (example: $1.00 per month)
+      const phoneCost = 1.0;
+      
+      if (userBalance < phoneCost) {
+        return res.json({ 
+          ok: false, 
+          error: "الرصيد غير كافٍ لشراء رقم هاتفي. الحد الأدنى: $1.00" 
+        });
+      }
+
+      try {
+        // Search for available US Local phone numbers
+        const availableNumbers = await twilioClient.availablePhoneNumbers
+          .getList("US", "Local", {
+            areaCode: "415", // San Francisco area code as example
+            limit: 1
+          });
+
+        if (!availableNumbers || availableNumbers.length === 0) {
+          return res.json({ 
+            ok: false, 
+            error: "لا توجد أرقام متاحة حالياً. حاول لاحقاً" 
+          });
+        }
+
+        const phoneNumber = availableNumbers[0].phoneNumber;
+
+        // Purchase the phone number
+        const incomingPhoneNumber = await twilioClient.incomingPhoneNumbers.create({
+          phoneNumber: phoneNumber,
+          voiceUrl: `https://${req.get("host")}/api/voice`,
+          voiceMethod: "POST",
+          smsUrl: `https://${req.get("host")}/api/sms-webhook`,
+          smsMethod: "POST"
+        });
+
+        // Deduct cost from Firestore balance
+        const newBalance = userBalance - phoneCost;
+        await updateUserBalance(String(userId), newBalance);
+
+        // Save assigned number and SID to Firestore
+        await assignNumberToUser(String(userId), phoneNumber, incomingPhoneNumber.sid);
+
+        res.json({
+          ok: true,
+          message: "تم شراء الرقم بنجاح",
+          phoneNumber: phoneNumber,
+          sid: incomingPhoneNumber.sid,
+          newBalance: newBalance
+        });
+      } catch (twilioErr: any) {
+        console.error("Twilio error:", twilioErr);
+        res.json({ 
+          ok: false, 
+          error: "خطأ في شراء الرقم: " + twilioErr.message 
+        });
+      }
+    } catch (e: any) {
+      console.error("Assign number error:", e);
+      res.json({ ok: false, error: e.message });
+    }
+  });
+
+  // Voice webhook - handle incoming calls
+  app.post("/api/voice", (req: any, res: any) => {
+    try {
+      const twiml = new twilio.twiml.VoiceResponse();
+
+      // Say welcome message in English
+      twiml.say("Welcome to Abu Al-Zahra Dialer");
+      
+      // Route the call to Twilio Voice SDK client
+      const connect = twiml.connect();
+      connect.stream({
+        url: `wss://${req.get("host")}/voice-stream`,
+        transport: "websocket"
+      });
+
+      res.type("text/xml");
+      res.send(twiml.toString());
+    } catch (e: any) {
+      console.error("Voice webhook error:", e);
+      res.type("text/xml");
+      const twiml = new twilio.twiml.VoiceResponse();
+      twiml.say("حدث خطأ");
+      res.send(twiml.toString());
+    }
+  });
+
+  // SMS webhook - handle incoming SMS
+  app.post("/api/sms-webhook", async (req: any, res: any) => {
+    try {
+      const { From, To, Body } = req.body;
+      
+      console.log(`SMS from ${From} to ${To}: ${Body}`);
+      
+      // TODO: Store incoming SMS in database
+      // For now, just acknowledge receipt
+      const twiml = new twilio.twiml.MessagingResponse();
+      twiml.message("تم استقبال رسالتك");
+      
+      res.type("text/xml");
+      res.send(twiml.toString());
+    } catch (e: any) {
+      console.error("SMS webhook error:", e);
+      res.type("text/xml");
+      const twiml = new twilio.twiml.MessagingResponse();
+      res.send(twiml.toString());
     }
   });
 

@@ -42,7 +42,10 @@ Private Dialer is a professional Arabic VoIP application called "أبو الزه
 | `/api/topup` | POST | JWT | Add balance (after PayPal payment) |
 | `/api/firebase-auth` | POST | No | Google/Firebase authentication |
 | `/api/test-firebase` | POST | No | Test Firestore connection (userId in body) |
-| `/twiml` | POST | No | TwiML webhook for Twilio calls |
+| `/api/assign-number` | POST | JWT | Purchase US Twilio number, deduct cost from Firestore balance, save to user doc |
+| `/api/voice` | POST | No | TwiML webhook for incoming calls - plays welcome message |
+| `/api/sms-webhook` | POST | No | TwiML webhook for incoming SMS messages |
+| `/twiml` | POST | No | TwiML webhook for legacy Twilio calls |
 | `/token` | GET | No | Legacy Twilio token (for index.html SDK) |
 | `/setup-new-user` | POST | No | Firebase new user setup hook |
 
@@ -75,6 +78,78 @@ Provides the following functions:
 
 ### Test Firebase Connection
 POST `/api/test-firebase` with `{"userId": "test_user_id"}` to verify Firestore connectivity.
+
+## Twilio Number Assignment & Voice Webhooks
+
+### POST `/api/assign-number` (Requires JWT Authentication)
+Automatically purchases a US phone number from Twilio and assigns it to the user.
+
+**Request:**
+```json
+POST /api/assign-number
+Headers: { "Authorization": "Bearer <JWT_TOKEN>" }
+Body: {} (empty, userId comes from JWT)
+```
+
+**Process:**
+1. Retrieves user's balance from Firestore using `getUserBalance()`
+2. Checks if balance ≥ $1.00 (phone number cost)
+3. Searches for available US Local phone numbers (area code: 415 by default)
+4. Purchases the number via Twilio API
+5. Sets Voice webhook URL to `/api/voice` and SMS webhook to `/api/sms-webhook`
+6. Deducts $1.00 from user's Firestore balance via `updateUserBalance()`
+7. Saves the phone number and SID to Firestore via `assignNumberToUser()`
+
+**Success Response:**
+```json
+{
+  "ok": true,
+  "message": "تم شراء الرقم بنجاح",
+  "phoneNumber": "+1415XXXXXXX",
+  "sid": "PN...",
+  "newBalance": 0.0
+}
+```
+
+**Error Cases:**
+- Insufficient balance: "الرصيد غير كافٍ لشراء رقم هاتفي. الحد الأدنى: $1.00"
+- No available numbers: "لا توجد أرقام متاحة حالياً. حاول لاحقاً"
+- Twilio error: "خطأ في شراء الرقم: [error details]"
+
+### POST `/api/voice` (Twilio Voice Webhook)
+Handles incoming calls to the assigned Twilio number.
+
+**Twilio sends:**
+- From: caller's phone number
+- To: assigned Twilio number
+- CallSid: unique call identifier
+
+**Response:**
+- Plays "Welcome to Abu Al-Zahra Dialer" greeting
+- Attempts to route call to Twilio Voice SDK client via WebSocket stream (`wss://{host}/voice-stream`)
+- Falls back to error message if exception occurs
+
+**TwiML Output:**
+```xml
+<Response>
+  <Say>Welcome to Abu Al-Zahra Dialer</Say>
+  <Connect>
+    <Stream url="wss://{host}/voice-stream" transport="websocket"/>
+  </Connect>
+</Response>
+```
+
+### POST `/api/sms-webhook` (Twilio SMS Webhook)
+Handles incoming SMS messages to the assigned Twilio number.
+
+**Twilio sends:**
+- From: sender's phone number
+- To: assigned Twilio number
+- Body: message content
+
+**Response:**
+- Acknowledges receipt with "تم استقبال رسالتك" message
+- TODO: Store incoming SMS to database for user history
 
 ## Environment Variables Required
 
