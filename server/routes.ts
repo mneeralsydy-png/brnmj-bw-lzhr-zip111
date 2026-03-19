@@ -497,6 +497,40 @@ export async function registerRoutes(
     }
   });
 
+  // Get user status - returns assigned number and balance from Firestore
+  app.get("/api/user-status", authenticate, async (req: any, res: any) => {
+    try {
+      const userId = String(req.userId);
+      const db = getFirestore();
+
+      // Get user data from Firestore
+      const userDoc = await db.collection("users").doc(userId).get();
+      
+      if (!userDoc.exists) {
+        return res.json({
+          ok: true,
+          assignedNumber: null,
+          sid: null,
+          balance: 0,
+          assignedAt: null
+        });
+      }
+
+      const userData = userDoc.data();
+      res.json({
+        ok: true,
+        assignedNumber: userData?.assignedNumber || null,
+        sid: userData?.assignedNumberSid || null,
+        balance: userData?.balance || 0,
+        assignedAt: userData?.assignedAt || null,
+        email: userData?.email || null
+      });
+    } catch (e: any) {
+      console.error("User status error:", e);
+      res.json({ ok: false, error: e.message });
+    }
+  });
+
   // Assign Twilio number to user - automatically purchase a US phone number
   app.post("/api/assign-number", authenticate, async (req: any, res: any) => {
     try {
@@ -613,6 +647,23 @@ export async function registerRoutes(
       res.type("text/xml");
       const twiml = new twilio.twiml.MessagingResponse();
       res.send(twiml.toString());
+    }
+  });
+
+  // Serve admin dashboard
+  app.get("/admin-dashboard.html", (req: any, res: any) => {
+    try {
+      res.sendFile(path.join(__dirname, "../server/admin-dashboard.html"));
+    } catch (e: any) {
+      res.status(500).json({ ok: false, error: "Dashboard not found" });
+    }
+  });
+
+  app.get("/admin-dashboard", (req: any, res: any) => {
+    try {
+      res.sendFile(path.join(__dirname, "../server/admin-dashboard.html"));
+    } catch (e: any) {
+      res.status(500).json({ ok: false, error: "Dashboard not found" });
     }
   });
 

@@ -9,12 +9,15 @@ Private Dialer is a professional Arabic VoIP application called "أبو الزه
 ### Frontend (Vanilla HTML/CSS/JS)
 - **`client/index.html`** - Main app HTML with full RTL Arabic UI, CSS styles, and inline JS logic
 - **`client/public/script.js`** - External JS brain logic (auth, calling, contacts, SMS, payments)
+- **`client/public/sdk-example.js`** - JavaScript SDK class for client integration (easy API wrapper)
 - **`client/public/manifest.json`** - PWA manifest for mobile-app-like experience
 
 ### Backend (Node.js + Express + TypeScript)
 - **`server/index.ts`** - Express server entry point
-- **`server/routes.ts`** - All API routes (register, login, calls, SMS, recordings, topup, etc.)
+- **`server/routes.ts`** - All API routes (register, login, calls, SMS, recordings, topup, assign-number, voice webhooks, etc.)
+- **`server/firebase.ts`** - Firebase Admin SDK integration (Firestore balance tracking, number assignment)
 - **`server/storage.ts`** - Storage interface
+- **`server/admin-dashboard.html`** - Built-in admin UI for monitoring users and numbers
 - **`database.db`** - SQLite database file (auto-created)
 
 ### Mobile (Android / Capacitor)
@@ -45,6 +48,7 @@ Private Dialer is a professional Arabic VoIP application called "أبو الزه
 | `/api/assign-number` | POST | JWT | Purchase US Twilio number, deduct cost from Firestore balance, save to user doc |
 | `/api/voice` | POST | No | TwiML webhook for incoming calls - plays welcome message |
 | `/api/sms-webhook` | POST | No | TwiML webhook for incoming SMS messages |
+| `/api/user-status` | GET | JWT | Get user status from Firestore (assigned number, balance, etc.) |
 | `/twiml` | POST | No | TwiML webhook for legacy Twilio calls |
 | `/token` | GET | No | Legacy Twilio token (for index.html SDK) |
 | `/setup-new-user` | POST | No | Firebase new user setup hook |
@@ -78,6 +82,63 @@ Provides the following functions:
 
 ### Test Firebase Connection
 POST `/api/test-firebase` with `{"userId": "test_user_id"}` to verify Firestore connectivity.
+
+## Client SDK & Integration
+
+### JavaScript SDK Class (`client/public/sdk-example.js`)
+Provides a convenient wrapper for all backend API endpoints. Features:
+
+```javascript
+const sdk = new AbuAlZahraSDK();
+
+// Authentication
+await sdk.login(email, password);
+await sdk.register(email, password);
+
+// User Management
+await sdk.getUserStatus();           // Get assigned number & balance from Firestore
+await sdk.getVoiceToken();           // Get Twilio Voice SDK token
+
+// Calling
+await sdk.makeCall(phoneNumber);     // Make outbound call ($0.05)
+await sdk.assignNumber();             // Purchase US phone number ($1.00)
+
+// SMS
+await sdk.sendSMS(phoneNumber, msg);  // Send SMS ($0.05)
+await sdk.getSMSList();              // Get SMS history
+
+// Billing
+await sdk.topupBalance(amount);       // Add balance
+await sdk.getCallHistory();           // Get call records
+```
+
+**Usage in Capacitor (Android/iOS):**
+```javascript
+// In your Capacitor app
+<script src="sdk-example.js"></script>
+<script>
+  const sdk = new AbuAlZahraSDK();
+  // Use sdk methods as shown above
+</script>
+```
+
+## Admin Dashboard
+
+### Access the Dashboard
+**URL:** `http://localhost:5000/admin-dashboard.html`
+
+### Features
+- ✅ **Test Firebase Connection** - Verify Firestore connectivity with user ID
+- ✅ **Create Test Users** - Register new users for testing
+- ✅ **User Statistics** - View total users, active numbers, total balance
+- ✅ **User & Numbers Table** - Monitor assigned phone numbers per user
+- ✅ **Call Logs** - View recent calls and SMS messages
+- ✅ **Assign Numbers** - Manually purchase and assign Twilio numbers
+- ✅ **Real-time Alerts** - Success/error notifications for all operations
+
+### Admin Dashboard Routes
+- `GET /admin-dashboard` - Serve dashboard
+- `GET /admin-dashboard.html` - Serve dashboard (alternative)
 
 ## Twilio Number Assignment & Voice Webhooks
 
