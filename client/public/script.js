@@ -2,9 +2,24 @@
 // Private Dialer - Brain Logic (العقل البرمجي)
 // ================================================
 
-// Firebase initialized and declared in HTML (index.html)
-// Global variables currentUser, balance, dialNumber, auth, db are available from there
+// Firebase Config
+const firebaseConfig = {
+    apiKey: "GOOGLE_API_KEY",
+    authDomain: "call-now-24582.firebaseapp.com",
+    projectId: "call-now-24582",
+    databaseURL: "https://call-now-24582-default-rtdb.firebaseio.com/"
+};
 
+if (typeof firebase !== 'undefined') {
+    try { firebase.initializeApp(firebaseConfig); } catch(e) {}
+}
+
+const db = firebase ? firebase.database() : null;
+const auth = firebase ? firebase.auth() : null;
+
+let currentUser = null;
+let balance = 0;
+let dialNumber = "";
 let activeCallSid = null;
 let callTimer = null;
 let callSeconds = 0;
