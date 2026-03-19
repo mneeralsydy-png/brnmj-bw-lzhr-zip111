@@ -416,17 +416,14 @@
             <div style="width:100px; height:100px; background:#E1F5FE; border-radius:50%; margin:0 auto 20px; display:flex; align-items:center; justify-content:center; font-size:2.5rem; color:var(--primary-azure);"><i class="fas fa-user-shield"></i></div>
             <h2 style="margin-bottom:20px;">أبو الزهراء VIP</h2>
             <div class="info-card" style="text-align:right; background:#fff;">
-                <p style="margin-bottom:10px; color:#666;">رقم الحساب (UID)</p>
-                <p id="account-uid-display" style="font-family:monospace; background:#f0f0f0; padding:10px; border-radius:5px; user-select:text;">...</p>
+                <p style="margin-bottom:5px; color:#666;">الرقم الأمريكي المرتبط</p>
+                <h3 id="account-us-number-display" style="color:var(--green); font-size:1.3rem;">...</h3>
                 <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
                 <p style="margin-bottom:5px; color:#666;">البريد الإلكتروني</p>
                 <p id="account-email-display" style="font-family:monospace; background:#f0f0f0; padding:10px; border-radius:5px;">...</p>
                 <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
-                <p style="margin-bottom:5px; color:#666;">الرقم الأمريكي الوهمي</p>
-                <h3 id="account-us-number-display" style="color:var(--green);">...</h3>
-                <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
-                <p style="margin-bottom:5px; color:#666;">الرصيد المتاح</p>
-                <h3 id="account-balance-display" style="color:var(--primary-azure); font-size:2rem;">$0.00</h3>
+                <p style="margin-bottom:5px; color:#666;">إصدار التطبيق</p>
+                <h3 id="account-app-version" style="color:var(--primary-azure); font-size:1.3rem;">v1.0.0</h3>
             </div>
         </div>
     </div>
@@ -621,9 +618,8 @@
                 const data = snapshot.val() || {};
                 balance = data.balance || 0;
                 document.getElementById('header-balance').innerText = balance.toFixed(2);
-                if (document.getElementById('account-balance-display')) document.getElementById('account-balance-display').innerText = balance.toFixed(2);
-                if (document.getElementById('account-uid-display')) document.getElementById('account-uid-display').innerText = user.uid;
                 if (document.getElementById('account-us-number-display')) document.getElementById('account-us-number-display').innerText = data.assignedUSNumber || 'جاري التخصيص...';
+                if (document.getElementById('account-email-display')) document.getElementById('account-email-display').innerText = user.email || 'لم يتم تعيين بريد';
             });
             initTwilio();
         } else {
@@ -1132,15 +1128,6 @@ async function enterApp() {
         }
     }
 
-    function openSubPage(id) { 
-        const el = document.getElementById(id);
-        if(el) el.style.display = 'flex'; 
-    }
-
-    function closeSubPage(id) { 
-        const el = document.getElementById(id);
-        if(el) el.style.display = 'none'; 
-    }
 
     function setDial(n) { 
         dialNumber = n; 
