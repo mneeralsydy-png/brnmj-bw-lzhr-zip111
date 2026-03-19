@@ -2,13 +2,9 @@
 // Private Dialer - Brain Logic (العقل البرمجي)
 // ================================================
 
-// Firebase initialized in HTML - reuse from there
-const db = (typeof firebase !== 'undefined') ? firebase.database() : null;
-const auth = (typeof firebase !== 'undefined') ? firebase.auth() : null;
+// Firebase initialized and declared in HTML (index.html)
+// Global variables currentUser, balance, dialNumber, auth, db are available from there
 
-let currentUser = null;
-let balance = 0;
-let dialNumber = "";
 let activeCallSid = null;
 let callTimer = null;
 let callSeconds = 0;
